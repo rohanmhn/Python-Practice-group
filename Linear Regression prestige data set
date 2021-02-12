@@ -15,13 +15,91 @@ data.head()
 data.describe()
 data.info()
 data.shape
+data.index
+data['type'].value_counts()
 
-data.plot()
+### replacing null values in type with most modal value
+data['type']=data['type'].fillna('bc')
 
-data.hist()
-data.boxplot()
+### visualizing teh data
+plt.hist(data['education'])
+data.boxplot(column=['education'])
+data.boxplot(column=['women','prestige'])
+data.boxplot(column=['census','income'])
 
-corrmatrix= data.corr()
-corrmatrix.sort_values('income')
+attributes = ["education", 'women','prestige', 'census','income']
+scatter_matrix(data[attributes], figsize=(12, 8))
 
+
+### checking for corelations
+corrdata=data.corr()
+corrdata
+
+### converting categorical data through one hot encoding
+from sklearn.preprocessing import OneHotEncoder
+cat_encoder=OneHotEncoder(sparse=False, categories='auto')
+
+type_onehot=cat_encoder.fit_transform(data[['type']])
+
+cat_encoder.categories_
+
+#type_onehot.sparse.to_dense()
+type_onehot=pd.DataFrame(type_onehot)
+type_onehot.columns=['bc', 'prof', 'wc']
+type_onehot.head()
+type_onehot.shape
+
+### merging categorical data in one hot form with original numerical dataframe
+#datanum= pd.concat([ data,type_onehot], axis=1)
+data_type=data['type']
+data_type.shape
+
+datanum=pd.merge(data,type_onehot,left_index=True, right_index=True) 
+
+datanum.describe()
+datanum.info()
+datanum.shape
+datanum=datanum.drop(['type'],axis=1)
+datanum.head(10)
+
+
+#### setting up col trnformer andpipeline
+
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+num_pipeline = Pipeline([ ('std_scaler', StandardScaler()) ])
+
+from sklearn.compose import ColumnTransformer
+num_attribs = list(attributes)
+cat_attribs = ["type"]
+full_pipeline = ColumnTransformer([
+ ("num", num_pipeline, num_attribs),
+ ("cat", OneHotEncoder(), cat_attribs),
+ ])
+data_prepared = full_pipeline.fit_transform(data)
+
+data_prepared1=pd.DataFrame(data_prepared)
+
+data_prepared1.head()
+
+
+
+
+
+
+
+
+#### breaking it into train and test
+train, test= train_test_split(datanum, test_size=0.2, random_state=800 )
+train.head()
+
+
+label=data['income'].copy()
+features=data.drop(['income'],axis=1)
+
+
+                    
 linreg=LinearRegression()
+linreg.fit(processing1,label)
+linreg.intercept_
+linreg.coef_
