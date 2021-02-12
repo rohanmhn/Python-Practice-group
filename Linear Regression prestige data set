@@ -80,7 +80,8 @@ data_prepared = full_pipeline.fit_transform(data)
 
 data_prepared1=pd.DataFrame(data_prepared)
 
-data_prepared1.head()
+dataprepared2.head()
+dataprepared2=data_prepared1.rename(columns={0:"education", 1:"income", 2:"women",3:"prestige", 4: "census", 5:'bc', 6:'prof', 7:'wc'})
 
 
 
