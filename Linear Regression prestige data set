@@ -2,14 +2,18 @@
 import os
 import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
+import seaborn as sns
+from pandas.plotting import scatter_matrix
 from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
 
 ### importing data
 path=(r"C:\Users\Rohan\Desktop\data science\ineuron\practice group")
 data= pd.read_csv(os.path.join(path,'Prestige (1).csv'), 
                   delim_whitespace=True)
 data.head()
+
 
 ### Exploring data
 data.describe()
@@ -39,6 +43,7 @@ corrdata
 from sklearn.preprocessing import OneHotEncoder
 cat_encoder=OneHotEncoder(sparse=False, categories='auto')
 
+####################################
 type_onehot=cat_encoder.fit_transform(data[['type']])
 
 cat_encoder.categories_
@@ -61,9 +66,9 @@ datanum.info()
 datanum.shape
 datanum=datanum.drop(['type'],axis=1)
 datanum.head(10)
+#######################################################################
 
-
-#### setting up col trnformer andpipeline
+#### setting up col transformer and pipeline
 
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -80,27 +85,64 @@ data_prepared = full_pipeline.fit_transform(data)
 
 data_prepared1=pd.DataFrame(data_prepared)
 
-dataprepared2.head()
-dataprepared2=data_prepared1.rename(columns={0:"education", 1:"income", 2:"women",3:"prestige", 4: "census", 5:'bc', 6:'prof', 7:'wc'})
-
-
-
-
+data_prepared1.head()
+data_prepared1=data_prepared1.rename(columns={0:"education", 1:"income", 2:"women",3:"prestige", 4: "census", 5:'bc', 6:'prof', 7:'wc'})
 
 
 
 
 #### breaking it into train and test
-train, test= train_test_split(datanum, test_size=0.2, random_state=800 )
+train, test= train_test_split(data_prepared1, test_size=0.2, random_state=800 )
+train['bc'].value_counts()
+
+trainlabel=train['income'].copy()
+trainfeatures=train.drop(['income'],axis=1)
+
+testlabel=test['income'].copy()
+testfeatures=test.drop(['income'],axis=1)
+test.head()
+
+#### running initial model of linear regression on train data with rmse                    
+linreg=LinearRegression()
+linreg.fit(trainfeatures,trainlabel)
+linreg.intercept_
+linreg.coef_
+
+from sklearn.metrics import mean_squared_error
+training_predictions = linreg.predict(trainfeatures)
+lin_mse = mean_squared_error(trainlabel, training_predictions)
+lin_rmse = np.sqrt(lin_mse)
+lin_rmse
+
+
+#### running initial model of linear regression on train data with rmse 
+test_predictions=linreg.predict(testfeatures)
+lin_mse_test=mean_squared_error(testlabel, test_predictions)
+lin_rmse_test=np.sqrt(lin_mse_test)
+lin_rmse_test
+
+#### since plot indicate a polynomial curve, a poly regression is attempted
+from sklearn.preprocessing import PolynomialFeatures
+poly_features= PolynomialFeatures(degree=2, include_bias=False)
+polyreg=poly_features.fit_transform(trainfeatures['prestige'])
+polyreg[0]
 train.head()
 
 
-label=data['income'].copy()
-features=data.drop(['income'],axis=1)
+linreg.fit(polyreg,trainlabel)
+linreg.intercept_,linreg.coef_
+
+X=data['prestige']
+####reshape below is very critical for poly transformation
+X_old=X.values.reshape(102,1)
+X_old.shape
+X_poly=poly_features.transform(X_old)
+X_poly[0]
+y=data['income']
+linreg.fit(X_poly, y)
+y_predicted=linreg.predict(X_poly)
 
 
-                    
-linreg=LinearRegression()
-linreg.fit(processing1,label)
-linreg.intercept_
-linreg.coef_
+plt.plot(X_old,y, 'b .')
+plt.plot(X, y_predicted, "r-", linewidth=1, label="Predictions")
+plt.show()
